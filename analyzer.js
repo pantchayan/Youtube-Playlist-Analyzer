@@ -1,5 +1,6 @@
 let puppeteer = require("puppeteer");
 let fs = require("fs");
+let writer = require("./writeToExcel");
 // no of videos
 // views
 // watch time -> get
@@ -57,6 +58,9 @@ console.log("Before");
     );
     
     console.table(videosList);
+    
+    writer.pushToCSV(videosList, "./res/result.xlsx", "Video Details")
+
   } catch (err) {
     console.log(err);
   }
@@ -90,9 +94,11 @@ let getStats = (watchtimeSelector, titleSelector) => {
     let videoName = videosNameArr[i].innerText;
 
     videosList.push({
-      videoName,
-      watchTime,
+      "Video title" : videoName,
+      "Duration" : watchTime,
     });
   }
   return videosList;
 };
+
+ // XLSX --> excel module
