@@ -32,43 +32,67 @@ console.log("Before");
       "#stats  .style-scope.ytd-playlist-sidebar-primary-info-renderer";
     let watchtimeSelector =
       ".style-scope ytd-thumbnail-overlay-time-status-renderer";
-    let nameSelector = "#video-title";
+    let titleSelector = "#video-title";
 
     await newPage.waitForSelector(playlistSelector);
     await newPage.waitForSelector(watchtimeSelector);
-    await newPage.waitForSelector(nameSelector);
-
-    let videosList = await newPage.evaluate(getStats, watchtimeSelector, nameSelector);
+    await newPage.waitForSelector(titleSelector);
     let playlistArr = await newPage.evaluate(consoleFn, playlistSelector);
     console.table(playlistArr[0]);
     console.table(playlistArr[1]);
-    console.table(videosList);
+    
+    // Scrolling to bottom
+    let videoCount = playlistArr[0].split(" ")[0];
+    videoCount = Number(videoCount);
+    let currentCount = await scrollToBottom(newPage, titleSelector);
+    while(videoCount-50 > currentCount){
+        currentCount = await scrollToBottom(newPage, titleSelector);
+    } 
 
+    // LATER getting videos details once page is at bottom
+    let videosList = await newPage.evaluate(
+      getStats,
+      watchtimeSelector,
+      titleSelector
+    );
+    
+    console.table(videosList);
   } catch (err) {
     console.log(err);
   }
 })();
 
-let getStats = ( watchtimeSelector, nameSelector) => {
-      
-    let watchTimeArr = document.querySelectorAll(watchtimeSelector);
-    let videosNameArr = document.querySelectorAll(nameSelector);
+let consoleFn = (playlistSelector) => {
+  let arr = document.querySelectorAll(playlistSelector);
+  let playlistArr = [];
+  playlistArr.push(arr[0].innerText, arr[1].innerText);
+  return playlistArr;
+};
 
-    let videosList = [];
-    for(let i=0;i<watchTimeArr.length;i++){
-      let watchTime = watchTimeArr[i].innerText;
-      let videoName = videosNameArr[i].innerText;
-
-      videosList.push({
-          videoName, watchTime
-      })
+let scrollToBottom = async (page, titleSelector) => {
+    let getLengthConsoleFn = (titleSelector) => {
+        window.scrollBy(0, window.innerHeight);
+        let titleElementArr = document.querySelectorAll(titleSelector);
+        return titleElementArr.length;
     }
-    return videosList;
-  };
 
-  let consoleFn = (playlistSelector) =>{ 
-      let arr = document.querySelectorAll(playlistSelector);
-      let playlistArr = [];
-      playlistArr.push(arr[0].innerText, arr[1].innerText);
-      return playlistArr;
+    return page.evaluate(getLengthConsoleFn, titleSelector);
+}
+
+
+let getStats = (watchtimeSelector, titleSelector) => {
+  let watchTimeArr = document.querySelectorAll(watchtimeSelector);
+  let videosNameArr = document.querySelectorAll(titleSelector);
+
+  let videosList = [];
+  for (let i = 0; i < watchTimeArr.length; i++) {
+    let watchTime = watchTimeArr[i].innerText;
+    let videoName = videosNameArr[i].innerText;
+
+    videosList.push({
+      videoName,
+      watchTime,
+    });
   }
+  return videosList;
+};
